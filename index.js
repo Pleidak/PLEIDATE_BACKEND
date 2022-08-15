@@ -2,9 +2,10 @@ import express from "express"
 import createMysqlSequelize from "../PLEIDATE_BACKEND/src/models/mysqlSequelizeResult.js"
 import SERVER_CONFIG from "../PLEIDATE_BACKEND/src/configs/server.js"
 import router from "../PLEIDATE_BACKEND/src/routes/user.js"
+import { authChecker } from "./src/services/auth.js";
 
 const app = express();
-const port = SERVER_CONFIG.port;
+const port = SERVER_CONFIG.PORT;
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -17,6 +18,7 @@ app.use((_, res, next) => {
     next();
 });
 
+app.all("*", authChecker)
 app.use(router);
 
 createMysqlSequelize().sync()

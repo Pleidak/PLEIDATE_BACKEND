@@ -1,16 +1,12 @@
 const ERROR_MESSAGES = {
-    phoneAlreadyExists: "số điện thoại đã được sử dụng",
-    couldntHashPassword: "couldn't hash the password",
-    errorOccurred: "đã có lỗi xảy ra khi tạo người dùng",
-    passwordNotProvided: "mật khẩu không được để trống",
-    phoneNotProvided: "số điện thoại không được để trống",
-    phoneNotExists: "không tìm thấy tài khoản với số điện thoại được cung cấp",
-    passwordComparingError: "error while checking user password",
-    passworDoesntMatch: "mật khẩu không chính xác"
+    ERROR_OCCURRED: "đã có lỗi xảy ra khi tạo người dùng",
+    WRONG_PHONE_OR_CODE: "số điện thoại hoặc mã xác nhận không hợp lệ",
+    INVALID_CODE: "mã xác nhận không chính xác",
+    NOT_LOGGED_IN: "bạn hiện chưa đăng nhập"
 }
 
 const SUCCESS_MESSAGES = {
-    userCreated: "Đăng ký tài khoản thành công!"
+    CODE_SENT: "mã xác nhận đã được gửi",
 }
   
 export {ERROR_MESSAGES, SUCCESS_MESSAGES}  
