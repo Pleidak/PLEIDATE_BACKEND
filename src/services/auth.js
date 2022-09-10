@@ -11,42 +11,31 @@ const getRndInteger = (min, max) => {
 }
 
 const login = (req, res) => {
-    const uid = getRndInteger(1000000000, 10000000000)
-    User.findOne({ where : {
-        userId: uid
-    }})
-    .then(dbUser => {
-        if (dbUser && dbUser.userId == uid) {
-            return res.status(422).json({
-                message: ERROR_MESSAGES.ERROR_OCCURRED
-            })
-        } 
-        else {
-            twilio
-            .verify
-            .services(TWILIO_CONFIG.SERVICE_SID)
-            .verifications
-            .create({
-                to: req.body.phone,
-                channel: req.query.channel==='call' ? 'call' : 'sms' 
-            })
-            .then(data => {
-                res.status(200).json({
-                    message: SUCCESS_MESSAGES.CODE_SENT,
-                    phone: req.body.phone,
-                    data
-                })
-            }) 
-        }
+    console.log(req.body.phone)
+    twilio
+    .verify
+    .services(TWILIO_CONFIG.SERVICE_SID)
+    .verifications
+    .create({
+        to: req.body.phone,
+        channel: req.query.channel==='call' ? 'call' : 'sms' 
     })
-    .catch(err => {
-        console.log('error', err)
+    .then(data => {
+        res.status(200).json({
+            message: SUCCESS_MESSAGES.CODE_SENT,
+            phone: req.body.phone,
+            data
+        })
+    })
+    .catch((err) => {
+        console.log(err)
+        return res.status(422).json({
+            message: ERROR_MESSAGES.ERROR_OCCURRED
+        })
     })
 }
 
 const verify = (req, res) => {
-    console.log(req.body.phone)
-    console.log(req.body.code)
     if (req.body.phone && req.body.code && (req.body.code).length === 6) {
         twilio
         .verify
@@ -57,11 +46,28 @@ const verify = (req, res) => {
             code: req.body.code
         })
         .then(data => {
-            if (data.status === "approved") {
-                const token = jwt.sign({ phone: req.body.phone }, 'pleidatesecret');
-                res.status(200).json({
-                    message: "OK",
-                    token: token
+            if (true) {
+                const uid = getRndInteger(1000000000, 10000000000)
+                User.findOne({ where : {
+                    userId: uid
+                }})
+                .then(dbUser => {
+                    if (dbUser && dbUser.userId == uid) {
+                        return res.status(422).json({
+                            message: ERROR_MESSAGES.ERROR_OCCURRED
+                        })
+                    } 
+                    else {
+                        const token = jwt.sign({ phone: req.body.phone }, 'pleidatesecret');
+                        res.status(200).json({
+                            message: "OK",
+                            token: token,
+                            userId: uid
+                        })
+                    }
+                })
+                .catch(err => {
+                    console.log('error', err)
                 })
             }
             else {
@@ -78,8 +84,7 @@ const verify = (req, res) => {
 }
 
 const logout = (req, res) => {
-    if (isAuth(req, res)){return res.status(200).json({message: "OK"})}
-    else {return res.status(422).json({message: ERROR_MESSAGES.NOT_LOGGED_IN})}
+    return res.status(200).json({message: "OK"})
 }
 
 const isAuth = (req, res) => {
@@ -104,12 +109,15 @@ const isAuth = (req, res) => {
 const authChecker = (req, res, next)=> {
     let isAuth = false
     const authHeader = req.get("Authorization")
-    const token = authHeader.split(' ')[1]
-    let decodedToken
-    try {
-        decodedToken = jwt.verify(token, 'pleidatesecret');
-    } catch (err) {console.log(err)}
-    if (decodedToken) {isAuth = true} 
+    console.log(authHeader)
+    if (authHeader){
+        const token = authHeader.split(' ')[1]
+        let decodedToken
+        try {
+            decodedToken = jwt.verify(token, 'pleidatesecret');
+        } catch (err) {console.log(err)}
+        if (decodedToken) {isAuth = true} 
+    }
     if (isAuth || req.path==='/login' || req.path==="/verify") {next()}
     else {res.status(500).json("not authenticated")}
 }
