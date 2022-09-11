@@ -27,7 +27,8 @@ app.use((_, res, next) => {
 });
 
 const emitter = new EventEmitter()
-emitter.setMaxListeners(0)
+emitter.setMaxListeners(1000)
+io.setMaxListeners(1000);
 app.all("*", authChecker)
 app.set('socketio', io);
 app.set('redisClient', redisClient);

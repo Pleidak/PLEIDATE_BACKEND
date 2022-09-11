@@ -12,41 +12,43 @@ const getRndInteger = (min, max) => {
 
 const login = (req, res) => {
     console.log(req.body.phone)
-    twilio
-    .verify
-    .services(TWILIO_CONFIG.SERVICE_SID)
-    .verifications
-    .create({
-        to: req.body.phone,
-        channel: req.query.channel==='call' ? 'call' : 'sms' 
-    })
-    .then(data => {
-        res.status(200).json({
+    // twilio
+    // .verify
+    // .services(TWILIO_CONFIG.SERVICE_SID)
+    // .verifications
+    // .create({
+    //     to: req.body.phone,
+    //     channel: req.query.channel==='call' ? 'call' : 'sms' 
+    // })
+    // .then(data => {
+        return res.status(200).json({
             message: SUCCESS_MESSAGES.CODE_SENT,
             phone: req.body.phone,
-            data
         })
-    })
-    .catch((err) => {
-        console.log(err)
-        return res.status(422).json({
-            message: ERROR_MESSAGES.ERROR_OCCURRED
-        })
-    })
+    // })
+    // .catch((err) => {
+    //     console.log(err)
+    //     return res.status(422).json({
+    //         message: ERROR_MESSAGES.ERROR_OCCURRED
+    //     })
+    // })
 }
 
 const verify = (req, res) => {
+    console.log(req.body.code)
     if (req.body.phone && req.body.code && (req.body.code).length === 6) {
-        twilio
-        .verify
-        .services(TWILIO_CONFIG.SERVICE_SID)
-        .verificationChecks
-        .create({
-            to: req.body.phone,
-            code: req.body.code
-        })
-        .then(data => {
-            if (true) {
+        console.log(1)
+        // twilio
+        // .verify
+        // .services(TWILIO_CONFIG.SERVICE_SID)
+        // .verificationChecks
+        // .create({
+        //     to: req.body.phone,
+        //     code: req.body.code
+        // })
+        // .then(data => {
+        //     console.log(333)
+        //     if (true) {
                 const uid = getRndInteger(1000000000, 10000000000)
                 User.findOne({ where : {
                     userId: uid
@@ -58,24 +60,23 @@ const verify = (req, res) => {
                         })
                     } 
                     else {
-                        const token = jwt.sign({ phone: req.body.phone }, 'pleidatesecret');
+                        const token = jwt.sign({ userId: uid }, 'pleidatesecret');
                         res.status(200).json({
                             message: "OK",
                             token: token,
-                            userId: uid
                         })
                     }
                 })
                 .catch(err => {
                     console.log('error', err)
                 })
-            }
-            else {
-                res.status(422).send({
-                    message: ERROR_MESSAGES.INVALID_CODE,
-                })
-            }
-        })
+        //     }
+        //     else {
+        //         res.status(422).send({
+        //             message: ERROR_MESSAGES.INVALID_CODE,
+        //         })
+        //     }
+        // })
     } else {
         res.status(422).send({
             message: ERROR_MESSAGES.WRONG_PHONE_OR_CODE,

@@ -1,12 +1,19 @@
 import SERVER_CONFIG from "../configs/server.js"
 import calcCrow from "../utils/CalculateDistance.js"
+import jwt from 'jsonwebtoken';
 
 const meetings = (req, res) => {
     const io = req.app.get('socketio')
     const redisClient = req.app.get('redisClient')
+    console.log("go meetting")
+    // console.log(io)
     io.on("connection", (socket) => {
-        socket.on("joinTracking", async (data) => {
         console.log("CONNECTED")
+        socket.on("joinTracking", async (data) => {
+        const authHeader = req.get("Authorization");
+        console.log(authHeader)
+        // console.log(io)
+
             const joinStatus = {
                 status: false
             }
@@ -15,7 +22,7 @@ const meetings = (req, res) => {
                 await redisClient.sAdd("trackingClientIds", socket.id)
                 joinStatus.status = true
                 socket.on("trackingLocation", async (trackingData) => {
-                    console.log(req)
+                    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
                     console.log(trackingData)
                     trackingData.user = socket.id
                     // await redisClient.set("trackingData", JSON.stringify(trackingData));
