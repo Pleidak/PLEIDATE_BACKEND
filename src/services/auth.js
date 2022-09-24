@@ -5,6 +5,10 @@ import Twilio from 'twilio';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../configs/messages.js';
 import TWILIO_CONFIG from '../configs/twilio.js';
 const twilio = new Twilio(TWILIO_CONFIG.ACCOUNT_SID, TWILIO_CONFIG.AUTH_TOKEN);
+import { sign } from '../utils/jwt.js'
+import { getOrUpdateUserInfo } from '../crud/userInfo.js';
+import userProfile from '../models/userProfile.js';
+// import { AWSUpload } from '../utils/Cloud.js';
 
 const getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min)) + min;
@@ -49,22 +53,85 @@ const verify = (req, res) => {
         // .then(data => {
         //     console.log(333)
         //     if (true) {
-                const uid = getRndInteger(1000000000, 10000000000)
-                User.findOne({ where : {
-                    userId: uid
-                }})
-                .then(dbUser => {
-                    if (dbUser && dbUser.userId == uid) {
-                        return res.status(422).json({
-                            message: ERROR_MESSAGES.ERROR_OCCURRED
-                        })
-                    } 
-                    else {
-                        const token = jwt.sign({ userId: uid }, 'pleidatesecret');
+                const signToken = (userId, isActive) => {
+                    const token = jwt.sign({ userId: userId }, 'pleidatesecret');
                         res.status(200).json({
                             message: "OK",
                             token: token,
+                            isActive: isActive
                         })
+                }
+                User.findOne({ where : {
+                    phone: req.body.phone
+                }})
+                .then(async (dbUser) => {
+                    if (!dbUser) {
+                        const createUser = async () => {
+                            const uid = getRndInteger(1000000000, 10000000000)
+                            console.log(uid)
+                            await User.findOne({
+                                where: {
+                                    userId: uid
+                                }
+                            }).then(async (existUidUser) => {
+                                if (existUidUser){
+                                    await createUser()
+                                }
+                                else {
+                                    try {
+                                        User.create({
+                                            userId: uid,
+                                            phone: req.body.phone,
+                                            facebookMail: null,
+                                            facebookPhone: null,
+                                            isActive: false
+                                        }).then(rs => {
+                                            if (rs){
+                                                try {
+                                                    userProfile.create({
+                                                        userId: uid,
+                                                        isVerified: false,
+                                                        name: null,
+                                                        nickname: null,
+                                                        gifts: 0,
+                                                        coins: 0,
+                                                        age: 0,
+                                                        gender: null,
+                                                        location: null,
+                                                        hometown: null,
+                                                        bio: null,
+                                                        work: null,
+                                                        education: null 
+                                                    }).then(()=>{
+                                                        signToken(rs.userId, false)
+                                                    })
+                                                }
+                                                catch (err) {
+                                                    return res.status(422).json({
+                                                        message: ERROR_MESSAGES.ERROR_OCCURRED
+                                                    })
+                                                }
+                                            }
+                                            else {
+                                                return res.status(422).json({
+                                                    message: ERROR_MESSAGES.ERROR_OCCURRED
+                                                })
+                                            }
+                                        })
+                                    }
+                                    catch (err){
+                                        return res.status(422).json({
+                                            message: ERROR_MESSAGES.ERROR_OCCURRED
+                                        })
+                                    }
+                                }
+                            })
+                            return 
+                        }
+                        createUser()
+                    } 
+                    else {
+                        signToken(dbUser.userId, dbUser.isActive)
                     }
                 })
                 .catch(err => {
@@ -84,43 +151,71 @@ const verify = (req, res) => {
     }
 }
 
+const addInfoBegin = async (req, res) => {
+    console.log(req.body.infoKey)
+    console.log(req.body.infoValue)
+    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
+    if (req.body.infoKey && req.body.infoValue){
+        await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(()=>{
+                res.status(200).json({
+                    message: "OK",
+                })
+            }, () => {
+                res.status(422).send({
+                    message: ERROR_MESSAGES.ERROR_OCCURRED,
+                })
+            }
+        )      
+        if (req.body.infoKey == 'avatar'){
+            
+        }
+    }
+}
+
 const logout = (req, res) => {
     return res.status(200).json({message: "OK"})
 }
 
-const isAuth = (req, res) => {
-    const authHeader = req.get("Authorization");
-    if (!authHeader) {
-        return res.status(422).json({ message: 'not authenticated' });
-    };
-    const token = authHeader.split(' ')[1];
-    let decodedToken; 
-    try {
-        decodedToken = jwt.verify(token, 'pleidatesecret');
-    } catch (err) {
-        return res.status(500).json({ message: err.message || 'could not decode the token' });
-    };
-    if (!decodedToken) {
-        res.status(422).json({ message: 'unauthorized' });
-    } else {
-        res.status(200).json({ message: 'OK' });
-    };
-};
+// const isAuth = (req, res) => {
+//     const authHeader = req.get("Authorization");
+//     console.log(authHeader)
+//     if (!authHeader) {
+//         return res.status(422).json({ message: 'not authenticated' });
+//     };
+//     const token = authHeader.split(' ')[1];
+//     let decodedToken; 
+//     try {
+//         decodedToken = jwt.verify(token, 'pleidatesecret');
+//     } catch (err) {
+//         return res.status(500).json({ message: err.message || 'could not decode the token' });
+//     };
+//     if (!decodedToken) {
+//         res.status(422).json({ message: 'unauthorized' });
+//     } else {
+//         res.status(200).json({ message: 'OK' });
+//     };
+// };
 
 const authChecker = (req, res, next)=> {
     let isAuth = false
-    const authHeader = req.get("Authorization")
-    console.log(authHeader)
-    if (authHeader){
-        const token = authHeader.split(' ')[1]
-        let decodedToken
-        try {
-            decodedToken = jwt.verify(token, 'pleidatesecret');
-        } catch (err) {console.log(err)}
-        if (decodedToken) {isAuth = true} 
+    console.log("path",req.path)
+    const exceptPaths = ["/login", "/verify"]
+    if (!exceptPaths.includes(req.path)) {
+        const authHeader = req.get("Authorization")
+        console.log(authHeader)
+        if (authHeader){
+            const token = authHeader.split(' ')[1]
+            let decodedToken
+            try {
+                decodedToken = jwt.verify(token, 'pleidatesecret');
+            } catch (err) {console.log(err)}
+            if (decodedToken) {isAuth = true} 
+        }
     }
-    if (isAuth || req.path==='/login' || req.path==="/verify") {next()}
+    else {isAuth = true}
+    console.log(isAuth)
+    if (isAuth){next()}
     else {res.status(500).json("not authenticated")}
 }
 
-export { login, verify, logout, isAuth, authChecker};
+export { login, verify, addInfoBegin, logout, authChecker};

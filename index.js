@@ -1,6 +1,6 @@
 import express from "express"
 import { Server } from 'socket.io'
-import EventEmitter from 'events'
+// import EventEmitter from 'events'
 import { createClient } from 'redis';
 import createMysqlSequelize from "../PLEIDATE_BACKEND/src/models/mysqlSequelizeResult.js"
 import SERVER_CONFIG from "../PLEIDATE_BACKEND/src/configs/server.js"
@@ -26,8 +26,9 @@ app.use((_, res, next) => {
     next();
 });
 
-const emitter = new EventEmitter()
-emitter.setMaxListeners(1000)
+// const emitter = new EventEmitter()
+// emitter.setMaxListeners(1000)
+// emitter.defaultMaxListeners = 1000
 io.setMaxListeners(1000);
 app.all("*", authChecker)
 app.set('socketio', io);
