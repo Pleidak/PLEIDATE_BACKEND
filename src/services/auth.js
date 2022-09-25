@@ -10,6 +10,9 @@ import { getOrUpdateUserInfo } from '../crud/userInfo.js';
 import { getOrUpdateImage } from '../crud/media.js';
 import userProfile from '../models/userProfile.js';
 // import { AWSUpload } from '../utils/Cloud.js';
+import {cloudinary} from '../utils/cloudidary.js'
+import formidable from "formidable";
+
 
 const getRndInteger = (min, max) => {
     return Math.floor(Math.random() * (max - min)) + min;
@@ -153,48 +156,67 @@ const verify = (req, res) => {
 }
 
 const addInfoBegin = async (req, res) => {
-    console.log(req.body.avatar)
-    console.log(req.headers)
-    console.log(req.body.infoValue)
     const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
-    if (req.body.avatar){
-        let avatar = req.body.avatar
-        if (typeof(req.body.avatar) == 'string'){avatar = [req.body.avatar]}
-        console.log("oke")
-        let isMainImage = true
-        let count = 0
-        for (let i=0; i<avatar.length; i++){
-            if (i!=0){isMainImage==false}
-            await getOrUpdateImage(userId, avatar[i], isMainImage).then(()=>{
-                count ++
-                if (count == avatar.length){
-                    res.status(200).json({
-                        message: "OK",
-                    })
-                }
+    if (req.body.infoKey && req.body.infoValue){
+        await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(async()=>{
+                res.status(200).json({
+                    message: "OK",
+                })
             }, () => {
                 res.status(422).send({
                     message: ERROR_MESSAGES.ERROR_OCCURRED,
                 })
-            })
-        }
+            }
+        )      
+        
     }
-    else {
-        if (req.body.infoKey && req.body.infoValue){
-            await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(()=>{
-                    res.status(200).json({
-                        message: "OK",
-                    })
-                }, () => {
-                    res.status(422).send({
-                        message: ERROR_MESSAGES.ERROR_OCCURRED,
-                    })
-                }
-            )      
+}
+
+const addMedia = async (req, res) => {
+    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
+    const form = formidable({ multiples: true });
+    console.log(req)
+
+    form.parse(req, async (err, fields, f) => {
+        console.log(err)
+        console.log(f)
+        // let avatar = req.body.avatar
+        // if (typeof(req.body.avatar) == 'string'){avatar = [req.body.avatar]}
+        // console.log("oke")
+        // let isMainImage = true
+        // let count = 0
+        // for (let i=0; i<avatar.length; i++){
+        //     if (i!=0){isMainImage==false}
+        //     try {
+        //         console.log(222)
+
+        //         await cloudinary.uploader.upload(avatar[i], {
+        //             public_id: `avatar_${userId}_${i}`
+        //         })
+        //         console.log(321)
+        //         await getOrUpdateImage(userId, avatar[i], isMainImage).then(async ()=>{
+        //             count ++
+        //             console.log(count)
+        //             if (count == avatar.length){
+        //                 res.status(200).json({
+        //                     message: "OK",
+        //                 })
+        //             }
+        //         }, () => {
+        //             // res.status(422).send({
+        //             //     message: ERROR_MESSAGES.ERROR_OCCURRED,
+        //             // })
+        //         })
+        //     } catch (err) {
+        //         console.log(err)
+        //         res.status(422).send({
+        //             message: ERROR_MESSAGES.ERROR_OCCURRED,
+        //         })
+        //         return
+        //     }
             
-        }
-    }
-    
+        // }
+    })
 }
 
 const logout = (req, res) => {
@@ -243,4 +265,4 @@ const authChecker = (req, res, next)=> {
     else {res.status(500).json("not authenticated")}
 }
 
-export { login, verify, addInfoBegin, logout, authChecker};
+export { login, verify, logout, authChecker, addInfoBegin, addMedia};

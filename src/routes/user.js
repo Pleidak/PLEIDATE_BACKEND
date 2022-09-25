@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { login, verify, addInfoBegin, logout } from '../services/auth.js';
+import { login, verify, logout, addInfoBegin, addMedia } from '../services/auth.js';
 import { meetings } from '../services/meetings.js';
 import { tracking} from '../services/tracking.js';
 import multipart from 'connect-multiparty';
@@ -10,7 +10,8 @@ const multipartMiddleware = multipart();
 
 router.post('/login', login)
 router.post('/verify', verify)
-router.post('/addInfoBegin', multipartMiddleware, addInfoBegin)
+router.post('/addInfoBegin', addInfoBegin)
+router.post('/addMedia', addMedia)
 router.get('/logout', logout)
 router.get('/meetings', meetings)
 router.post('/api/locations',  tracking)

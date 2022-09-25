@@ -1,5 +1,10 @@
-cloudinary.config({ 
-  cloud_name: 'dyrjg8n6f', 
-  api_key: '878843849581596', 
-  api_secret: 'zg5cBpRt_hG3FaE6H7uiAyy9GGo' 
+import { v2 as cloudinary } from 'cloudinary'
+import {Cloudinary} from '../configs/cloud.js'
+
+cloudinary.config({
+  cloud_name: Cloudinary.CLOUD_NAME,
+  api_key: Cloudinary.API_KEY,
+  api_secret: Cloudinary.API_SECRET,
 });
+
+export {cloudinary}
