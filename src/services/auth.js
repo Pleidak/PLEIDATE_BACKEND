@@ -7,6 +7,7 @@ import TWILIO_CONFIG from '../configs/twilio.js';
 const twilio = new Twilio(TWILIO_CONFIG.ACCOUNT_SID, TWILIO_CONFIG.AUTH_TOKEN);
 import { sign } from '../utils/jwt.js'
 import { getOrUpdateUserInfo } from '../crud/userInfo.js';
+import { getOrUpdateImage } from '../crud/media.js';
 import userProfile from '../models/userProfile.js';
 // import { AWSUpload } from '../utils/Cloud.js';
 
@@ -152,24 +153,48 @@ const verify = (req, res) => {
 }
 
 const addInfoBegin = async (req, res) => {
-    console.log(req.body.infoKey)
+    console.log(req.body.avatar)
+    console.log(req.headers)
     console.log(req.body.infoValue)
     const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
-    if (req.body.infoKey && req.body.infoValue){
-        await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(()=>{
-                res.status(200).json({
-                    message: "OK",
-                })
+    if (req.body.avatar){
+        let avatar = req.body.avatar
+        if (typeof(req.body.avatar) == 'string'){avatar = [req.body.avatar]}
+        console.log("oke")
+        let isMainImage = true
+        let count = 0
+        for (let i=0; i<avatar.length; i++){
+            if (i!=0){isMainImage==false}
+            await getOrUpdateImage(userId, avatar[i], isMainImage).then(()=>{
+                count ++
+                if (count == avatar.length){
+                    res.status(200).json({
+                        message: "OK",
+                    })
+                }
             }, () => {
                 res.status(422).send({
                     message: ERROR_MESSAGES.ERROR_OCCURRED,
                 })
-            }
-        )      
-        if (req.body.infoKey == 'avatar'){
+            })
+        }
+    }
+    else {
+        if (req.body.infoKey && req.body.infoValue){
+            await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(()=>{
+                    res.status(200).json({
+                        message: "OK",
+                    })
+                }, () => {
+                    res.status(422).send({
+                        message: ERROR_MESSAGES.ERROR_OCCURRED,
+                    })
+                }
+            )      
             
         }
     }
+    
 }
 
 const logout = (req, res) => {
