@@ -175,47 +175,48 @@ const addInfoBegin = async (req, res) => {
 const addMedia = async (req, res) => {
     const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
     const form = formidable({ multiples: true });
-    console.log(req)
+    console.log(123)
 
     form.parse(req, async (err, fields, f) => {
         console.log(err)
-        console.log(f)
+        console.log(f.files)
         // let avatar = req.body.avatar
         // if (typeof(req.body.avatar) == 'string'){avatar = [req.body.avatar]}
         // console.log("oke")
-        // let isMainImage = true
-        // let count = 0
-        // for (let i=0; i<avatar.length; i++){
-        //     if (i!=0){isMainImage==false}
-        //     try {
-        //         console.log(222)
+        const avatar = f.files
+        let isMainImage = true
+        let count = 0
+        for (let i=0; i<avatar.length; i++){
+            if (i!=0){isMainImage==false}
+            try {
+                console.log(222)
 
-        //         await cloudinary.uploader.upload(avatar[i], {
-        //             public_id: `avatar_${userId}_${i}`
-        //         })
-        //         console.log(321)
-        //         await getOrUpdateImage(userId, avatar[i], isMainImage).then(async ()=>{
-        //             count ++
-        //             console.log(count)
-        //             if (count == avatar.length){
-        //                 res.status(200).json({
-        //                     message: "OK",
-        //                 })
-        //             }
-        //         }, () => {
-        //             // res.status(422).send({
-        //             //     message: ERROR_MESSAGES.ERROR_OCCURRED,
-        //             // })
-        //         })
-        //     } catch (err) {
-        //         console.log(err)
-        //         res.status(422).send({
-        //             message: ERROR_MESSAGES.ERROR_OCCURRED,
-        //         })
-        //         return
-        //     }
+                await cloudinary.uploader.upload(avatar[i].filepath, {
+                    public_id: `avatar_${userId}_${i}`
+                })
+                console.log(321)
+                await getOrUpdateImage(userId, avatar[i].filepath, isMainImage).then(async ()=>{
+                    count ++
+                    console.log(count)
+                    if (count == avatar.length){
+                        res.status(200).json({
+                            message: "OK",
+                        })
+                    }
+                }, () => {
+                    res.status(422).send({
+                        message: ERROR_MESSAGES.ERROR_OCCURRED,
+                    })
+                })
+            } catch (err) {
+                console.log(err)
+                res.status(422).send({
+                    message: ERROR_MESSAGES.ERROR_OCCURRED,
+                })
+                return
+            }
             
-        // }
+        }
     })
 }
 
