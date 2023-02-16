@@ -1,5 +1,5 @@
-import sequelize from "sequelize"
-import mysqlSequelize from "./mysqlConfig.js"
+const sequelize = require("sequelize")
+const mysqlSequelize = require("./mysqlConfig.js")
 
 const user = mysqlSequelize.define("User", {
     userId: {
@@ -13,4 +13,4 @@ const user = mysqlSequelize.define("User", {
     isActive: sequelize.BOOLEAN,
 })
 
-export default user
+module.exports = user

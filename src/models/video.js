@@ -1,9 +1,9 @@
-import sequelize from "sequelize"
-import mysqlSequelize from "./mysqlConfig.js"
+const sequelize = require("sequelize")
+const mysqlSequelize = require("./mysqlConfig.js")
 
 const video = mysqlSequelize.define("Video", {
     videoPath: sequelize.STRING,
     isMainVideo: sequelize.BOOLEAN,
 })
 
-export default video
+module.exports = video

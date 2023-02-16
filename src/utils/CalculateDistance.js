@@ -22,4 +22,4 @@ function toRad(Value)
     return Value * Math.PI / 180;
 }
 
-export default calcCrow
+module.exports = calcCrow

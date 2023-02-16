@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken'
-import calcCrow from '../utils/CalculateDistance.js';
-import meetting from '../models/meeting.js';
+const jwt = require('jsonwebtoken')
+const calcCrow = require('../utils/CalculateDistance.js')
+const meetting = require('../models/meeting.js')
 
 
 const tracking = async (req, res) => {
@@ -14,6 +14,7 @@ const tracking = async (req, res) => {
         latitude: body.location.coords.latitude,
         timestamp: body.location.timestamp
     }
+    console.log(trackingData)
     await redisClient.set(userId, JSON.stringify(trackingData));
     const trackingUsers = await redisClient.sMembers("trackingUsers")
     for (let i = 0; i < trackingUsers.length; i++) {
@@ -53,4 +54,4 @@ const tracking = async (req, res) => {
     return res.send({ success: true });
 }
 
-export {tracking}
+module.exports = {tracking}

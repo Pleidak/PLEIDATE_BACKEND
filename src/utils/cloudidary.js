@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary'
-import {Cloudinary} from '../configs/cloud.js'
+const cloudinary = require('cloudinary').v2
+const {Cloudinary} = require('../config/cloud.js')
 
 cloudinary.config({
   cloud_name: Cloudinary.CLOUD_NAME,
@@ -7,4 +7,4 @@ cloudinary.config({
   api_secret: Cloudinary.API_SECRET,
 });
 
-export {cloudinary}
+module.exports = {cloudinary}

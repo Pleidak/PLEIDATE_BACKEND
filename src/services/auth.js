@@ -1,17 +1,21 @@
 
-import jwt from 'jsonwebtoken';
-import User from '../models/user.js';
-import Twilio from 'twilio';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../configs/messages.js';
-import TWILIO_CONFIG from '../configs/twilio.js';
+const jwt = require('jsonwebtoken')
+const User = require('../models/user.js')
+const Twilio = require('twilio')
+const { ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/messages.js')
+const TWILIO_CONFIG = require('../config/twilio.js')
 const twilio = new Twilio(TWILIO_CONFIG.ACCOUNT_SID, TWILIO_CONFIG.AUTH_TOKEN);
-import { sign } from '../utils/jwt.js'
-import { getOrUpdateUserInfo } from '../crud/userInfo.js';
-import { getOrUpdateImage } from '../crud/media.js';
-import userProfile from '../models/userProfile.js';
-// import { AWSUpload } from '../utils/Cloud.js';
-import {cloudinary} from '../utils/cloudidary.js'
-import formidable from "formidable";
+const { getOrUpdateUser } = require('../crud/user.js')
+const { getOrUpdateUserInfo } = require('../crud/userInfo.js')
+const { getOrUpdateUserExtra } = require('../crud/userExtra.js')
+const { crudUserInterest } = require('../crud/interest.js')
+const { crudImage } = require('../crud/media.js')
+const userProfile = require('../models/userProfile.js')
+// const { AWSUpload } = require('../utils/Cloud.js';
+const {cloudinary} = require('../utils/cloudidary.js')
+const formidable = require("formidable")
+const e = require('express')
+const userExtra = require('../models/userExtra.js')
 
 
 const getRndInteger = (min, max) => {
@@ -44,6 +48,7 @@ const login = (req, res) => {
 
 const verify = (req, res) => {
     console.log(req.body.code)
+    console.log(req.body.phone)
     if (req.body.phone && req.body.code && (req.body.code).length === 6) {
         console.log(1)
         // twilio
@@ -57,10 +62,12 @@ const verify = (req, res) => {
         // .then(data => {
         //     console.log(333)
         //     if (true) {
-                const signToken = (userId, isActive) => {
+                const signToken = (userId, mainAvatar, isActive) => {
                     const token = jwt.sign({ userId: userId }, 'pleidatesecret');
                         res.status(200).json({
                             message: "OK",
+                            userId: userId,
+                            mainAvatar: mainAvatar,
                             token: token,
                             isActive: isActive
                         })
@@ -107,8 +114,34 @@ const verify = (req, res) => {
                                                         work: null,
                                                         education: null 
                                                     }).then(()=>{
-                                                        signToken(rs.userId, false)
+                                                        userExtra.create({
+                                                            userId: uid,
+                                                            height: null,
+                                                            exercise: null,
+                                                            educationLevel: null,
+                                                            smoking: 0,
+                                                            Gender: null,
+                                                            kids: null,
+                                                            starSign: null,
+                                                            politics: null,
+                                                            religion: null,
+                                                            language: null
+                                                        }).then(()=>{
+                                                            const beginGifts = beginGifts
+                                                            beginGifts.forEach(gift => {
+                                                                gift.create({
+                                                                    userId: uid,
+                                                                    giftId: beginGifts.giftId,
+                                                                    name: beginGifts.name,
+                                                                    rarity: beginGifts.rarity,
+                                                                    amount: beginGiftsbeginGifts.amount,
+                                                                    ownOrReceived: beginGifts.ownOrReceived 
+                                                                })
+                                                            })
+                                                            signToken(rs.userId, '', false)
+                                                        })
                                                     })
+                                                    
                                                 }
                                                 catch (err) {
                                                     return res.status(422).json({
@@ -135,7 +168,27 @@ const verify = (req, res) => {
                         createUser()
                     } 
                     else {
-                        signToken(dbUser.userId, dbUser.isActive)
+                        console.log(dbUser.isActive)
+                        let mainAvatar = ''
+                        let order = 3
+                        const imgs = await crudImage(dbUser.userId, "READ", 0, null)
+                        console.log(imgs.length)
+                        if (imgs.length > 0){
+                            for (let i=0; i<imgs.length; i++){
+                                console.log(imgs[i].order)
+                                if (imgs[i].order <= order){
+                                    order = imgs[i].order
+                                    mainAvatar = imgs[i].imagePath
+                                    console.log(mainAvatar)
+
+                                }
+                            }
+                            console.log(mainAvatar)
+                            signToken(dbUser.userId, cloudinary.url(mainAvatar), dbUser.isActive)
+                        }
+                        else {
+                            signToken(dbUser.userId, mainAvatar, dbUser.isActive)
+                        }
                     }
                 })
                 .catch(err => {
@@ -143,27 +196,28 @@ const verify = (req, res) => {
                 })
         //     }
         //     else {
-        //         res.status(422).send({
+        //         res.status(422).json({
         //             message: ERROR_MESSAGES.INVALID_CODE,
         //         })
         //     }
         // })
     } else {
-        res.status(422).send({
+        res.status(422).json({
             message: ERROR_MESSAGES.WRONG_PHONE_OR_CODE,
         })
     }
 }
 
-const addInfoBegin = async (req, res) => {
+const addUserBegin = async (req, res) => {
     const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
     if (req.body.infoKey && req.body.infoValue){
-        await getOrUpdateUserInfo(userId, req.body.infoKey, req.body.infoValue).then(async()=>{
-                res.status(200).json({
+        await getOrUpdateUser(userId, "UPDATE", req.body.infoKey, req.body.infoValue).then(async()=>{
+            res.status(200).json({
                     message: "OK",
                 })
-            }, () => {
-                res.status(422).send({
+            }, (err) => {
+                console.log(err)
+                res.status(422).json({
                     message: ERROR_MESSAGES.ERROR_OCCURRED,
                 })
             }
@@ -172,45 +226,134 @@ const addInfoBegin = async (req, res) => {
     }
 }
 
-const addMedia = async (req, res) => {
+const addUserInfoBegin = async (req, res) => {
     const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
-    const form = formidable({ multiples: true });
-    console.log(123)
-
-    form.parse(req, async (err, fields, f) => {
-        console.log(err)
-        console.log(f.files)
-        // let avatar = req.body.avatar
-        // if (typeof(req.body.avatar) == 'string'){avatar = [req.body.avatar]}
-        // console.log("oke")
-        const avatar = f.files
-        let isMainImage = true
-        let count = 0
-        for (let i=0; i<avatar.length; i++){
-            if (i!=0){isMainImage==false}
-            try {
-                console.log(222)
-
-                await cloudinary.uploader.upload(avatar[i].filepath, {
-                    public_id: `avatar_${userId}_${i}`
+    if (req.body.infoKey && req.body.infoValue){
+        await getOrUpdateUserInfo(userId, "UPDATE", req.body.infoKey, req.body.infoValue).then(async()=>{
+            res.status(200).json({
+                    message: "OK",
                 })
-                console.log(321)
-                await getOrUpdateImage(userId, avatar[i].filepath, isMainImage).then(async ()=>{
+            }, (err) => {
+                console.log(err)
+                res.status(422).json({
+                    message: ERROR_MESSAGES.ERROR_OCCURRED,
+                })
+            }
+        )      
+        
+    }
+}
+
+const addUserExtraBegin = async (req, res) => {
+    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
+    console.log(req.body.infoKey)
+    console.log(req.body.infoValue)
+    if (req.body.infoKey && req.body.infoValue){
+        await getOrUpdateUserExtra(userId, "UPDATE", req.body.infoKey, req.body.infoValue).then(async()=>{
+            res.status(200).json({
+                    message: "OK",
+                })
+            }, (err) => {
+                console.log(err)
+                res.status(422).json({
+                    message: ERROR_MESSAGES.ERROR_OCCURRED,
+                })
+            }
+        )      
+        
+    }
+}
+
+const addUserInterestBegin = async (req, res) => {
+    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
+    if (req.body.infoKey && req.body.infoValue){
+        const interest = req.body.infoValue
+        let count = 0
+        console.log(interest)
+        for (let i=0; i<interest.length; i++){
+            if (interest[i]){
+                await crudUserInterest(userId, 'CREATE', 'hobby', interest[i]).then(async()=>{
                     count ++
+                    if (count == interest.length){
                     console.log(count)
-                    if (count == avatar.length){
+
                         res.status(200).json({
                             message: "OK",
                         })
                     }
-                }, () => {
-                    res.status(422).send({
+                }, (err) => {
+                    console.log(err)
+                    res.status(422).json({
                         message: ERROR_MESSAGES.ERROR_OCCURRED,
                     })
+                    return                
+                }
+            )      
+            }
+        }
+    }
+}
+
+const addMedia = async (req, res) => {
+    console.log(123)
+    const userId = jwt.decode(req.get("Authorization").split(' ')[1]).userId
+    const form = formidable({ multiples: true });
+
+    form.parse(req, async (err, fields, f) => {
+        let avatar = f.files
+        let count = 0
+        let mainAvatarUrl = ''
+        console.log(!Array.isArray(avatar))
+        if (!Array.isArray(avatar)){avatar = [avatar]}
+        for (let i=0; i<avatar.length; i++){
+            try {
+                console.log(avatar[i])
+                const dotType = avatar[i].mimetype.substring(avatar[i].mimetype.indexOf("/") + 1)
+                await cloudinary.uploader.upload(avatar[i].filepath, {
+                    public_id: `avatar_${userId}_${i}`
+                }, (error, result)=>{
+                    console.log(result, error);
+                    if (!error){
+                        crudImage(userId, "CREATE", fields.order[i], `avatar_${userId}_${i}.${dotType}`).then(()=>{
+                            count ++
+                            if (i==0){
+                                mainAvatarUrl = result.url
+                            }
+                            console.log(1)
+                            if (count== avatar.length){
+                                res.status(200).json({
+                                    message: "OK",
+                                    mainAvatar: mainAvatarUrl
+                                })
+                            }
+                        }, async ()=>{
+                            await crudImage(userId, "UPDATE", fields.order[i], `avatar_${userId}_${i}.${dotType}`).then(()=>{
+                                count ++
+                                console.log(2)
+                                if (count == avatar.length){
+                                    res.status(200).json({
+                                        message: "OK",
+                                    })
+                                }
+                            }, ()=>{
+                                console.log(3)
+                                res.status(422).json({
+                                    message: ERROR_MESSAGES.ERROR_OCCURRED,
+                                })
+                                return
+                            })
+                        })
+                    }
+                    else {
+                        res.status(422).json({
+                            message: ERROR_MESSAGES.ERROR_OCCURRED,
+                        })
+                        return
+                    }
                 })
             } catch (err) {
                 console.log(err)
-                res.status(422).send({
+                res.status(422).json({
                     message: ERROR_MESSAGES.ERROR_OCCURRED,
                 })
                 return
@@ -266,4 +409,4 @@ const authChecker = (req, res, next)=> {
     else {res.status(500).json("not authenticated")}
 }
 
-export { login, verify, logout, authChecker, addInfoBegin, addMedia};
+module.exports = { login, verify, logout, authChecker, addUserBegin, addUserInfoBegin, addUserExtraBegin, addUserInterestBegin, addMedia};

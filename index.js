@@ -1,11 +1,11 @@
-import express from "express"
-import { Server } from 'socket.io'
-// import EventEmitter from 'events'
-import { createClient } from 'redis';
-import createMysqlSequelize from "../PLEIDATE_BACKEND/src/models/mysqlSequelizeResult.js"
-import SERVER_CONFIG from "../PLEIDATE_BACKEND/src/configs/server.js"
-import router from "../PLEIDATE_BACKEND/src/routes/user.js"
-import { authChecker } from "./src/services/auth.js";
+const express = require("express")
+const { Server } = require('socket.io')
+// import EventEmitter = require( 'events'
+const {createClient} = require('redis');
+const createMysqlSequelize = require("../PLEIDATE_BACKEND/src/models/mysqlSequelizeResult.js")
+const SERVER_CONFIG = require("../PLEIDATE_BACKEND/src/config/server.js")
+const router = require("../PLEIDATE_BACKEND/src/routes/user.js")
+const { authChecker } =require( "./src/services/auth.js")
 
 const app = express();
 const port = SERVER_CONFIG.PORT;
@@ -13,7 +13,7 @@ const io = new Server(8001);
 
 const redisClient = createClient();
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
-await redisClient.connect();
+redisClient.connect();
 
 app.use(express.urlencoded({ extended: true }));
 

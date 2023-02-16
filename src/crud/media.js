@@ -1,71 +1,88 @@
-import image from "../models/image.js";
-import video from "../models/video.js";
+const image = require("../models/image.js")
+const video = require("../models/video.js")
 
-const getOrUpdateImage = async (userId, imagePath, isMainImage) => {
-    try {
-        await image.findOne({
-            where: {
-                userId: userId,
-                imagePath: imagePath
+const crudImage = async (userId, type, order, imagePath) => {
+    const imgs = await image.findAll({
+        where: {
+            userId: userId,
+        }
+    })
+    switch (type) {
+        case "CREATE": {
+            if (imgs.length < 3 && imgs.length < order) {
+                await image.create({
+                    userId: userId,
+                    order: imgs.length + 1,
+                    imagePath: imagePath,
+                    isMainImage: order == 1 ? true: false,
+                    createAt: Date.now()
+                }).then(()=>{
+                    return true
+                })
             }
-        }).then(async (i) => {
-            if (i){return i}
-            else {
-                console.log(345)
-                try {
-                    await image.create({
+            else {return false}
+        }
+        case "READ": {
+            if (imgs){return imgs}
+            else {return false}
+        }
+        case "UPDATE": {
+            if (imgs && imgs.length >= order){
+                await image.update({
+                    imagePath: imagePath,
+                    isMainImage: order == 1 ? true: false,
+                    createAt: Date.now()
+                }, {
+                    where: {
                         userId: userId,
-                        imagePath: imagePath,
-                        isMainImage: isMainImage,
-                        createAt: Date.now()
+                        order: order
+                    }
+                }).then(()=>{
+                    return true
+                })
+            }
+            else {return false}
+        }
+        case "DELETE": {
+            if (imgs){
+                if (imgs.includes(order)){
+                    await image.delete({
+                        where: {
+                            userId: userId,
+                            order: order
+                        }
                     }).then(()=>{
                         return true
                     })
                 }
-                catch (err){
-                    console.log(err)
+                else {
                     return false
                 }
             }
-        })
-    }
-    catch (err){
-        console.log(err)
-        return false
+            else {return false}
+        }
     }
 }
 
 const getOrUpdateVideo = async (userId, videoPath, isMainVideo) => {
-    try {
-        video.findOne({
-            where: {
+    video.findOne({
+        where: {
+            userId: userId,
+            videoPath: videoPath
+        }
+    }).then((i) => {
+        if (i){return i}
+        else {
+            video.create({
                 userId: userId,
-                videoPath: videoPath
-            }
-        }).then((i) => {
-            if (i){return i}
-            else {
-                try {
-                    video.create({
-                        userId: userId,
-                        videoPath: videoPath,
-                        isMainVideo: isMainVideo,
-                        createAt: Date.now()
-                    }).then(()=>{
-                        return true
-                    })
-                }
-                catch (err){
-                    console.log(err)
-                    return false
-                }
-            }
-        })
-    }
-    catch (err){
-        console.log(err)
-        return false
-    }
+                videoPath: videoPath,
+                isMainVideo: isMainVideo,
+                createAt: Date.now()
+            }).then(()=>{
+                return true
+            })
+        }
+    })
 }
 
-export {getOrUpdateImage, getOrUpdateVideo}
+module.exports = {crudImage, getOrUpdateVideo}

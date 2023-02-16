@@ -1,5 +1,5 @@
-import sequelize from "sequelize"
-import MYSQL_CONFIG from "../configs/mysql.js"
+const sequelize = require("sequelize")
+const MYSQL_CONFIG = require("../config/mysql.js")
 
 
 const mysqlSequelize = new sequelize({
@@ -20,4 +20,4 @@ const mysqlSequelize = new sequelize({
 
 mysqlSequelize.authenticate()
 
-export default mysqlSequelize
+module.exports = mysqlSequelize

@@ -1,5 +1,5 @@
-import sequelize from "sequelize"
-import mysqlSequelize from "./mysqlConfig.js"
+const sequelize = require("sequelize")
+const mysqlSequelize = require("./mysqlConfig.js")
 
 const userProfile = mysqlSequelize.define("UserProfile", {
     userId: {
@@ -7,6 +7,7 @@ const userProfile = mysqlSequelize.define("UserProfile", {
         primaryKey: true
     },
     is_verified: sequelize.BOOLEAN,
+    email: sequelize.STRING,
     name: sequelize.STRING,
     nickname: sequelize.STRING,
     gift: sequelize.INTEGER,
@@ -20,4 +21,4 @@ const userProfile = mysqlSequelize.define("UserProfile", {
     education: sequelize.STRING
 })
 
-export default userProfile
+module.exports = userProfile
